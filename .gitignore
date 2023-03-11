@@ -1,0 +1,7 @@
+*.swn
+*.swo
+*.swp
+.cache
+.vscode
+bin
+compile_commands.json
