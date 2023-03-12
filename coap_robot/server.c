@@ -18,10 +18,10 @@ static ssize_t _servo_handler(coap_pkt_t* pdu, uint8_t *buf, size_t len, coap_re
 static uint8_t servo_states[ARRAY_SIZE(servos)];
 
 static const coap_resource_t _resources[] = {
-    { "/arm/rotate", COAP_GET | COAP_PUT, _servo_handler, &servos[0] },
-    { "/arm/extend", COAP_GET | COAP_PUT, _servo_handler, &servos[1] },
-    { "/arm/lift", COAP_GET | COAP_PUT, _servo_handler, &servos[2] },
-    { "/arm/grab", COAP_GET | COAP_PUT, _servo_handler, &servos[3] },
+    { "/arm/rotate", COAP_GET | COAP_PUT | COAP_POST, _servo_handler, &servos[0] },
+    { "/arm/extend", COAP_GET | COAP_PUT | COAP_POST, _servo_handler, &servos[1] },
+    { "/arm/lift", COAP_GET | COAP_PUT | COAP_POST, _servo_handler, &servos[2] },
+    { "/arm/grab", COAP_GET | COAP_PUT | COAP_POST, _servo_handler, &servos[3] },
 };
 
 static gcoap_listener_t _listener = {
@@ -61,14 +61,39 @@ static ssize_t _servo_handler(coap_pkt_t* pdu, uint8_t *buf, size_t len, coap_re
             servo_set(servo, pos);
             return gcoap_response(pdu, buf, len, COAP_CODE_CHANGED);
         }
-        else {
-            return gcoap_response(pdu, buf, len, COAP_CODE_BAD_REQUEST);
+
+        return gcoap_response(pdu, buf, len, COAP_CODE_BAD_REQUEST);
+    case COAP_POST:
+        if (pdu->payload_len <= 4) {
+            char payload[5] = { 0 };
+            memcpy(payload, (char *)pdu->payload, pdu->payload_len);
+            int step = strtol(payload, NULL, 10);
+            int new = step + servo_states[idx];
+            if (new < 0) {
+                new = 0;
+            }
+            if (new > UINT8_MAX) {
+                new = UINT8_MAX;
+            }
+            servo_states[idx] = (uint8_t)new;
+            servo_set(servo, servo_states[idx]);
+            return gcoap_response(pdu, buf, len, COAP_CODE_CHANGED);
         }
+
+        return gcoap_response(pdu, buf, len, COAP_CODE_BAD_REQUEST);
     }
 
     return 0;
 }
+
 void server_init(void)
 {
     gcoap_register_listener(&_listener);
+
+    for (unsigned idx = 0; idx < ARRAY_SIZE(servo_states); idx++) {
+
+        servo_t *servo = &servos[idx];
+        servo_states[idx] = 127;
+        servo_set(servo, servo_states[idx]);
+    }
 }
