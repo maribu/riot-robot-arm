@@ -1,5 +1,5 @@
 APPLICATION := coap_robot
-BOARD := 4dof-arm
+BOARD := bluepill-stm32f103cb-4dof-arm
 RIOTBASE := $(CURDIR)/../RIOT
 EXTERNAL_BOARD_DIRS += $(CURDIR)/../boards/riot
 COMPILE_COMMANDS_PATH ?= $(abspath $(CURDIR)/../compile_commands.json)
